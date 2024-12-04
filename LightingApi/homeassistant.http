@@ -1,0 +1,31 @@
+@hsApi=http://homeassistant.local:8123/api
+@sampleLight=light.office_desk_lightstrip
+
+GET {{hsApi}}/states/{{sampleLight}}
+Authorization: Bearer {{homeassistanttoken}}
+Accept: application/json
+
+###
+
+### Turn on a light
+POST {{hsApi}}/services/light/turn_on
+Authorization: Bearer {{homeassistanttoken}}
+Content-Type: application/json
+
+{
+  "entity_id": "{{sampleLight}}"
+}
+
+###
+
+### Turn off a light
+POST {{hsApi}}/services/light/turn_off
+Authorization: Bearer {{homeassistanttoken}}
+Content-Type: application/json
+
+{
+  "entity_id": "{{sampleLight}}"
+}
+
+###
+

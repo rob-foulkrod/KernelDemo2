@@ -1,0 +1,22 @@
+﻿name: GenerateJoke
+template: |
+  Tell me a joke about {{$subject}}.
+template_format: semantic-kernel
+description: A function that generates a joke for a given subject.
+input_variables:
+  - name: subject
+    description: The subject of the joke.
+    default: cats
+    is_required: true
+output_variable:
+  description: The generated joke.
+execution_settings:
+  default:
+    temperature: 0.8
+    max_token : 200
+  gpt35Service:
+    temperature: 0.5
+    max_token : 100
+  gpt45turbo:
+    temperature: 0.7
+    max_token : 50
