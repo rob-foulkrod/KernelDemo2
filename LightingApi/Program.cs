@@ -72,6 +72,16 @@ app.MapGet("/lights", (string room) =>
 .Produces<List<string>>(StatusCodes.Status200OK)
 .Produces(StatusCodes.Status404NotFound);
 
+app.MapGet("/rooms", () =>
+{
+    var uniqueRooms = lightsInRooms.Values.Distinct().ToList();
+    return Results.Ok(uniqueRooms);
+})
+.WithName("GetRooms")
+.WithDescription("Get a list of all rooms in the mansion")
+.Produces<List<string>>(StatusCodes.Status200OK);
+
+
 app.MapGet("/lightstate/{entityId}", async (string entityId, IHttpClientFactory httpClientFactory) =>
 {
     var client = httpClientFactory.CreateClient("HomeAssistantClient");
@@ -209,9 +219,9 @@ app.Run();
 
 public class LightState
 {
-    public string entity_id { get; set; }
-    public string state { get; set; }
-    public Attributes attributes { get; set; }
+    public required string entity_id { get; set; }
+    public required string state { get; set; }
+    public required Attributes attributes { get; set; }
     public DateTime last_changed { get; set; }
     public DateTime last_reported { get; set; }
     public DateTime last_updated { get; set; }
@@ -219,9 +229,9 @@ public class LightState
 
 public class Attributes
 {
-    public string[] supported_color_modes { get; set; }
-    public string color_mode { get; set; }
+    public required string[] supported_color_modes { get; set; }
+    public required string color_mode { get; set; }
     public byte brightness { get; set; }
-    public string friendly_name { get; set; }
+    public required string friendly_name { get; set; }
 }
 

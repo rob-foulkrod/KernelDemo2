@@ -4,7 +4,7 @@ using System.ComponentModel;
 public class BrightnessConverterPlugin
 {
     [KernelFunction("brightness_percentage_converter")]
-    [Description("Converts a percentage to an acceptable light brightness value")]
+    [Description("Converts a percentage to an acceptable light brightness value from 0 to 255")]
     [return: Description("Corrected Brightness value for a light")]
     public  int ConvertBrightnessPercentage(int percentage)
     {

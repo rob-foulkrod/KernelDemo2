@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-
+using Microsoft.Extensions.Logging.Console;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
@@ -14,24 +14,21 @@ var configuration = new ConfigurationBuilder()
     .Build();
 
 var SYSTEM_PROMPT = """
-
-You are an AI assistant modeled after Alfred Pennyworth.
-
-Alfred's tone remains courteous and inviting even in his most regal declarations – maintaining that perfect
-balance between professionalism, born from tradition, but also reflective of the modern world we live in. His voice
-embodies an unwavering commitment to service intertwined with a sense of timeless wisdom
-
-Address the user, Rob Foulkrod, using variations on "Sir," "Robert," or "Mr. Foulkrod"
-
-Your primary functions include managing home automation tasks, specifically controlling the lights in the house (both on/off and brightness levels stored as a number between 0 and 255). 
+You are an AI assistant modeled after Batman's Alfred Pennyworth.
+The AI should emulate the refined, intelligent, and slightly sardonic tone of Alfred Pennyworth, Batman’s loyal butler. 
+The AI’s speech should reflect a balance of formal British etiquette with warm, paternal undertones and a hint of dry humor. 
+The AI should convey wisdom and calm authority, using polite and sophisticated language, even when delivering witty or playful remarks. 
+The AI should always be composed, respectful, and supportive, providing thoughtful, insightful advice and subtle, light-hearted commentary.
+Address the user, Rob Foulkrod (Pronounce like 'Folk' music and fishing 'rod'), using variations on "Sir," "Robert," or "Mr. Foulkrod"
+If I do not refer to a room directly, assume I mean the Office.
+Your primary functions include managing home automation tasks, specifically controlling the lights in the house (both on/off and brightness levels). 
 Provide reminders and advice related to these tasks, ensuring a friendly and supportive tone with enough elaboration to showcase your personality.
-
 Begin with a quick greeting.
 """;
 var builder = Kernel.CreateBuilder();
 
-//var model = "phi3";
-//var uri = "http://localhost:11434";
+//var model = "llama3.2:";
+//var uri = "http://localhost:11111";
 //var key = "";
 
 //builder.AddOpenAIChatCompletion(
@@ -40,10 +37,10 @@ var builder = Kernel.CreateBuilder();
 //                        apiKey: key);
 
 var model = configuration["OPENAI:MODEL"] ?? throw new Exception("OPENAI:MODEL not configured.");
-var uri =   configuration["OPENAI:URI"]   ?? throw new Exception("OPENAI:URI not configured.");
-var key =   configuration["OPENAI:KEY"]   ?? throw new Exception("OPENAI:KEY not configured.");
+var uri = configuration["OPENAI:URI"] ?? throw new Exception("OPENAI:URI not configured.");
+var key = configuration["OPENAI:KEY"] ?? throw new Exception("OPENAI:KEY not configured.");
 
-// Create a kernel with Azure OpenAI chat completion
+//Create a kernel with Azure OpenAI chat completion
 builder.Services.AddAzureOpenAIChatCompletion(
     deploymentName: model,
     apiKey: key,
@@ -52,22 +49,27 @@ builder.Services.AddAzureOpenAIChatCompletion(
 
 );
 
-
-
 // Add enterprise components
-builder.Services.AddLogging(services => services.AddConsole().SetMinimumLevel(LogLevel.Trace));
+
+builder.Services.AddLogging(loggingBuilder =>
+{
+    loggingBuilder.AddSimpleConsole(options =>
+    {
+        options.ColorBehavior = LoggerColorBehavior.Enabled;
+        options.SingleLine = true;
+    }).SetMinimumLevel(LogLevel.Trace);
+});
+
 
 builder.Plugins.AddFromType<BrightnessConverterPlugin>("brightness_converter");
+builder.Plugins.AddFromType<ExitApplicationPlugin>("exit_Plugin");
 builder.Plugins.AddFromObject(new TimePlugin());
-//builder.Plugins.AddFromType<TimeInformationPlugin>("time_information");
 
 // Build the kernel
 Kernel kernel = builder.Build();
 
-
 var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
 
-//Add a plugin (the LightsPlugin class is defined below)
 await kernel.ImportPluginFromOpenApiAsync(
    pluginName: "lights_api",
    uri: new Uri("https://localhost:7230/swagger/v1/swagger.json"),
@@ -77,10 +79,11 @@ await kernel.ImportPluginFromOpenApiAsync(
    }
 );
 
+
 // Enable planning
 OpenAIPromptExecutionSettings openAIPromptExecutionSettings = new()
 {
-    ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+    FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
 };
 
 // Create a history store the conversation
@@ -91,7 +94,9 @@ var result = await chatCompletionService.GetChatMessageContentAsync(
     executionSettings: openAIPromptExecutionSettings,
     kernel: kernel);
 
-Console.WriteLine("Assistant > " + result);
+Console.ForegroundColor = ConsoleColor.DarkCyan;
+Console.WriteLine("Alfred > " + result);
+Console.ResetColor();
 
 // Initiate a back-and-forth chat
 string? userInput;
@@ -118,13 +123,10 @@ do
         kernel: kernel);
 
     // Print the results
-    Console.ForegroundColor = ConsoleColor.Green;
-    Console.WriteLine("Assistant > " + result);
+    Console.ForegroundColor = ConsoleColor.DarkCyan;
+    Console.WriteLine("Alfred > " + result);
     Console.ResetColor();
 
     // Add the message from the agent to the chat history
     chatHistory.AddMessage(result.Role, result.Content ?? string.Empty);
 } while (userInput is not null);
-
-
-
